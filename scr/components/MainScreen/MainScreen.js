@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { LineChart } from 'react-native-chart-kit';
+import { useNavigation } from '@react-navigation/native'; // Импортируйте useNavigation
 
 const MainScreen = () => {
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const navigation = useNavigation(); // Получаем объект навигации
 
     useEffect(() => {
         const fetchCryptos = async () => {
@@ -15,7 +17,7 @@ const MainScreen = () => {
                     params: {
                         vs_currency: 'usd',
                         order: 'market_cap_desc',
-                        per_page: 50,
+                        per_page: 10,
                         page: 1,
                         sparkline: true,
                     },
@@ -40,53 +42,33 @@ const MainScreen = () => {
         if (sparklineData.length === 0) return null;
 
         return (
-            <View style={styles.item}>
-                <View style={styles.row}>
-                    <Image source={{ uri: item.image }} style={styles.image} />
-                    <Text style={styles.itemText}>{item.name} ({item.symbol.toUpperCase()})</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('CryptoDetail', { coinId: item.id })}>
+                <View style={styles.item}>
+                    <View style={styles.row}>
+                        <Image source={{ uri: item.image }} style={styles.image} />
+                        <Text style={styles.itemText}>{item.name} ({item.symbol.toUpperCase()})</Text>
+                    </View>
+                    <LineChart
+                        data={{
+                            labels: sparklineData.map((_, index) => index.toString()),
+                            datasets: [{ data: sparklineData }],
+                        }}
+                        width={300}
+                        height={100}
+                        yAxisLabel="$"
+                        chartConfig={{
+                            backgroundColor: '#1E1E1E',
+                            color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`,
+                        }}
+                        bezier
+                        style={styles.graph}
+                    />
+                    <View style={styles.priceContainer}>
+                        <Text style={styles.priceText}>${item.current_price.toFixed(2)}</Text>
+                        <Text style={styles.changeText}>{item.price_change_percentage_24h.toFixed(2)}%</Text>
+                    </View>
                 </View>
-                <LineChart
-                    data={{
-                        labels: sparklineData.map((_, index) => index.toString()),
-                        datasets: [
-                            {
-                                data: sparklineData,
-                            },
-                        ],
-                    }}
-                    width={300}
-                    height={100}
-                    yAxisLabel="$"
-                    yAxisInterval={1}
-                    chartConfig={{
-                        backgroundColor: '#1E1E1E',
-                        backgroundGradientFrom: '#1E1E1E',
-                        backgroundGradientTo: '#1E1E1E',
-                        decimalPlaces: 2,
-                        color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`, // Цвет линии
-                        style: {
-                            borderRadius: 16,
-                        },
-                        fillShadowGradient: '#ff7e7e', // Цвет заливки под графиком
-                        fillShadowGradientOpacity: 0.5, // Прозрачность заливки
-                        propsForDots: {
-                            r: "0.5",
-                            strokeWidth: "2",
-                            stroke: "#ff6347", // Цвет обводки точек
-                        },
-                        propsForLabels: {
-                            fontSize: 10,
-                            color: '#ffffff', // Цвет меток
-                        },
-                    }}
-                    bezier
-                    style={styles.graph}
-                />
-                <View style={styles.priceContainer}>
-                    <Text style={styles.priceText}>${item.current_price.toFixed(2)}</Text>
-                    <Text style={styles.changeText}>{item.price_change_percentage_24h.toFixed(2)}%</Text>
-                </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -128,7 +110,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingTop: 50,
+        paddingTop: 70,
         backgroundColor: '#1E1E1E',
         padding: 20,
     },

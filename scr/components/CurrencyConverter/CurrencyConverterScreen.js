@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -10,78 +10,110 @@ import {
     Modal,
     FlatList,
 } from 'react-native';
-
-const currencies = [
-    { label: 'Bitcoin (BTC)', value: 'BTC', image: { uri: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' } },
-    { label: 'Ethereum (ETH)', value: 'ETH', image: { uri: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' } },
-    { label: 'Litecoin (LTC)', value: 'LTC', image: { uri: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png' } },
-    { label: 'Ripple (XRP)', value: 'XRP', image: { uri: 'https://cryptologos.cc/logos/ripple-xrp-logo.png' } },
-];
+import axios from 'axios';
 
 const CryptoConverter = () => {
-    const [amount, setAmount] = useState('1');
-    const [fromCurrency, setFromCurrency] = useState('BTC');
-    const [toCurrency, setToCurrency] = useState('ETH');
-    const [convertedAmount, setConvertedAmount] = useState('0');
+    const [amounts, setAmounts] = useState(['1']); // Начальное значение для первой криптовалюты
+    const [currencies, setCurrencies] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
-    const [isFromCurrency, setIsFromCurrency] = useState(true);
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [conversionRates, setConversionRates] = useState({}); // Для хранения курсов
 
-    const exchangeRates = {
-        BTC: { ETH: 15, LTC: 200, XRP: 3000 },
-        ETH: { BTC: 0.067, LTC: 13.33, XRP: 200 },
-        LTC: { BTC: 0.005, ETH: 0.075, XRP: 15 },
-        XRP: { BTC: 0.00033, ETH: 0.005, LTC: 0.067 },
+    useEffect(() => {
+        const fetchCurrencies = async () => {
+            try {
+                const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: {
+                        vs_currency: 'usd',
+                        order: 'market_cap_desc',
+                        per_page: 10,
+                        page: 1,
+                        sparkline: false,
+                    }
+                });
+                const formattedCurrencies = response.data.map(coin => ({
+                    label: `${coin.name} (${coin.symbol.toUpperCase()})`,
+                    value: coin.symbol.toUpperCase(),
+                    image: { uri: coin.image },
+                    current_price: coin.current_price,
+                }));
+                setCurrencies(formattedCurrencies);
+                setConversionRates(Object.fromEntries(formattedCurrencies.map(coin => [coin.value, coin.current_price])));
+                setAmounts(new Array(formattedCurrencies.length).fill('1')); // Инициализация с "1"
+                convertCurrencies(new Array(formattedCurrencies.length).fill('1'), formattedCurrencies); // Конвертация при загрузке
+            } catch (error) {
+                console.error('Error fetching currencies:', error);
+            }
+        };
+
+        fetchCurrencies();
+    }, []);
+
+    const handleAmountChange = (text, index) => {
+        const newAmounts = [...amounts];
+        newAmounts[index] = text;
+        setAmounts(newAmounts); // Устанавливаем новое значение для текущего поля
+
+        // Конвертация только при вводе в одно из полей
+        convertCurrencies(newAmounts, currencies);
     };
 
-    const convertCurrency = () => {
-        const rate = exchangeRates[fromCurrency][toCurrency] || 1;
-        const result = (amount * rate).toFixed(4);
-        setConvertedAmount(result);
+    const convertCurrencies = (amounts, currencies) => {
+        const results = amounts.map((amount, index) => {
+            const coin = currencies[index % currencies.length];
+            if (!coin) return '0.0000'; // Если валюты нет, возвращаем 0
+
+            // Проверка на число
+            const dollarValue = parseFloat(amount) * (conversionRates[currencies[0].value] || 1); // Получаем значение в долларах
+            return (dollarValue / (conversionRates[coin.value] || 1)).toFixed(4); // Конвертация на основе курса
+        });
+        setAmounts(results); // Обновляем значения в строках ввода
     };
 
     const selectCurrency = (value) => {
-        if (isFromCurrency) {
-            setFromCurrency(value);
-        } else {
-            setToCurrency(value);
+        const newCurrencies = [...currencies];
+        if (newCurrencies[selectedIndex]) {
+            newCurrencies[selectedIndex].value = value;
         }
         setModalVisible(false);
+        convertCurrencies(amounts, newCurrencies);
+    };
+
+    const addCurrencyInput = () => {
+        if (currencies.length > amounts.length) {
+            setAmounts([...amounts, '']); // Добавляем пустую строку для нового ввода
+        }
     };
 
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Криптовалютный конвертер</Text>
 
-            {/* Ввод валюты */}
-            <View style={styles.converterRow}>
-                <TextInput
-                    style={styles.input}
-                    value={amount}
-                    keyboardType="numeric"
-                    onChangeText={setAmount}
-                />
-                <TouchableOpacity onPress={() => { setIsFromCurrency(true); setModalVisible(true); }} style={styles.currencyButton}>
-                    <Image source={currencies.find(c => c.value === fromCurrency).image} style={styles.icon} />
-                    <Text style={styles.currencyText}>{fromCurrency}</Text>
-                </TouchableOpacity>
-            </View>
+            {amounts.map((amount, index) => (
+                <View key={index} style={styles.converterRow}>
+                    <TextInput
+                        style={styles.input}
+                        value={amount}
+                        keyboardType="numeric"
+                        onChangeText={(text) => handleAmountChange(text, index)}
+                    />
+                    <TouchableOpacity
+                        onPress={() => {
+                            setSelectedIndex(index);
+                            setModalVisible(true);
+                        }}
+                        style={styles.currencyButton}
+                    >
+                        <Image source={currencies[index]?.image} style={styles.icon} />
+                        <Text style={styles.currencyText}>{currencies[index]?.value || 'Выберите валюту'}</Text>
+                    </TouchableOpacity>
+                </View>
+            ))}
 
-            <TouchableOpacity style={styles.convertButton} onPress={convertCurrency}>
-                <Text style={styles.convertButtonText}>Конвертировать</Text>
+            <TouchableOpacity style={styles.addButton} onPress={addCurrencyInput}>
+                <Text style={styles.addButtonText}>Добавить валюту</Text>
             </TouchableOpacity>
 
-            {/* Вывод валюты */}
-            <View style={styles.outputContainer}>
-                <TouchableOpacity onPress={() => { setIsFromCurrency(false); setModalVisible(true); }} style={styles.currencyButton}>
-                    <Image source={currencies.find(c => c.value === toCurrency).image} style={styles.icon} />
-                    <Text style={styles.currencyText}>{toCurrency}</Text>
-                </TouchableOpacity>
-                <Text style={styles.resultText}>
-                    {convertedAmount} {toCurrency}
-                </Text>
-            </View>
-
-            {/* Модальное окно для выбора валюты */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -112,7 +144,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        paddingTop: 50,
+        paddingTop: 70,
         backgroundColor: '#1E1E1E',
     },
     title: {
@@ -155,29 +187,17 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: 'bold',
     },
-    convertButton: {
-        backgroundColor: '#007BFF',
+    addButton: {
+        backgroundColor: '#28A745',
         padding: 15,
         alignItems: 'center',
         borderRadius: 10,
         marginVertical: 20,
     },
-    convertButtonText: {
+    addButtonText: {
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
-    },
-    outputContainer: {
-        alignItems: 'center',
-        backgroundColor: '#2A2A2A',
-        borderRadius: 10,
-        padding: 10,
-    },
-    resultText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 10,
     },
     modalContainer: {
         flex: 1,
