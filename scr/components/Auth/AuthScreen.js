@@ -10,7 +10,7 @@ const AuthScreen = ({ onLogin }) => {
     const handleLogin = () => {
         const user = users.find((u) => u.username === username && u.password === password);
         if (user) {
-            onLogin(); // Успешный вход
+            onLogin();
         } else {
             Alert.alert('Ошибка', 'Неверные данные');
         }
