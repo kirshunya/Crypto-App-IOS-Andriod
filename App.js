@@ -1,55 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import CryptoConverter from './scr/components/CurrencyConverter/CurrencyConverterScreen'; // ваш компонент конвертера
+import AuthScreen from './scr/components/Auth/AuthScreen'; // Импортируйте экран авторизации
+import ProfileScreen from './scr/components/Profile/ProfileScreen'; // Экран профиля
+import CryptoConverter from './scr/components/CurrencyConverter/CurrencyConverterScreen'; // компонент конвертера
 import MainScreen from './scr/components/MainScreen/MainScreen';
-import ProfileScreen from "./scr/components/Profile/ProfileScreen"; // другой экран
-import NewsScreen from "./scr/components/News/NewsScreen";
+import NewsScreen from './scr/components/News/NewsScreen'; // экран новостей
 
 const Tab = createBottomTabNavigator();
 
-const App = () => {
+const MainApp = ({ user }) => {
     return (
-        <NavigationContainer>
-            <Tab.Navigator
-                screenOptions={({ route }) => ({
-                    tabBarIcon: ({ focused, color, size }) => {
-                        let iconName;
-                        if (route.name === 'Главная страница') {
-                            iconName = require('./assets/favicon.png'); // замените на вашу иконку
-                        } else if (route.name === 'Конвертер') {
-                            iconName = require('./assets/favicon.png'); // замените на вашу иконку
-                        } else if (route.name === 'Новости') {
-                            iconName = require('./assets/favicon.png');
-                        } else if (route.name === 'Личный кабинет') {
-                            iconName = require('./assets/favicon.png');
-                        }
-
-                        return <Image source={iconName} style={{ width: size, height: size, tintColor: color }} />;
-                    },
-                    tabBarActiveTintColor: '#007BFF',
-                    tabBarInactiveTintColor: 'gray',
-                    tabBarStyle: {
-                        backgroundColor: '#1E1E1E',
-                    },
-                })}
-            >
-                <Tab.Screen name="Главная страница" component={MainScreen} options={{ headerShown: false }} />
-                <Tab.Screen name="Конвертер" component={CryptoConverter} options={{ headerShown: false }} />
-                <Tab.Screen name="Новости" component={NewsScreen} options={{ headerShown: false }} />
-                <Tab.Screen name="Личный кабинет" component={ProfileScreen} options={{ headerShown: false }} />
-            </Tab.Navigator>
-        </NavigationContainer>
+        <Tab.Navigator>
+            <Tab.Screen name="Главная страница" component={MainScreen} options={{ headerShown: false }} />
+            <Tab.Screen name="Конвертер" component={CryptoConverter} options={{ headerShown: false }} />
+            <Tab.Screen name="Новости" component={NewsScreen} options={{ headerShown: false }} />
+        </Tab.Navigator>
     );
 };
 
-// Примените отступ сверху в каждом из ваших экранов
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: 20, // Отступ сверху
-    },
-});
+const App = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null); // Состояние для хранения информации о пользователе
+
+    const handleLogin = (userData) => {
+        setUser(userData); // Устанавливаем данные пользователя
+        setIsAuthenticated(true); // Успешный вход
+    };
+
+    return (
+        <NavigationContainer>
+            <View style={{ flex: 1 }}>
+                {isAuthenticated ? <MainApp user={user} /> : <AuthScreen onLogin={handleLogin} />}
+            </View>
+        </NavigationContainer>
+    );
+};
 
 export default App;

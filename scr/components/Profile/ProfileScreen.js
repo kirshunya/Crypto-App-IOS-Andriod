@@ -1,15 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-const ProfileScreen = () => {
-    const user = {
-        avatar: 'https://img.goodfon.ru/wallpaper/big/7/a6/mining-maining-bitkoin-bitcoin-vektor-vector-minimalism.jpg', // Замените на реальный URL изображения
-        nickname: 'Имя пользователя',
-    };
-
+const ProfileScreen = ({ user }) => {
     return (
         <View style={styles.container}>
-            <Image source={{ uri: user.avatar }} style={styles.avatar} />
             <Text style={styles.nickname}>{user.nickname}</Text>
             <TouchableOpacity style={styles.button}>
                 <Text style={styles.buttonText}>Настройки</Text>
@@ -25,12 +19,6 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: '#1E1E1E',
         alignItems: 'center',
-    },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        marginBottom: 20,
     },
     nickname: {
         fontSize: 24,

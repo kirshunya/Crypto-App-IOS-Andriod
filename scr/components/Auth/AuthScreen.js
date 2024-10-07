@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 
-const AuthScreen = ({ navigation }) => {
+const AuthScreen = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
-    const [users, setUsers] = useState([]); // Массив для хранения пользователей
+    const [users, setUsers] = useState([]);
 
     const handleLogin = () => {
         const user = users.find((u) => u.username === username && u.password === password);
         if (user) {
-            navigation.navigate('Main');
+            onLogin(); // Успешный вход
         } else {
             Alert.alert('Ошибка', 'Неверные данные');
         }
@@ -22,10 +22,15 @@ const AuthScreen = ({ navigation }) => {
             Alert.alert('Ошибка', 'Пользователь с таким именем уже существует');
             return;
         }
-        setUsers([...users, { username, password }]); // Добавляем нового пользователя
+        // Добавление нового пользователя
+        setUsers([...users, { username, password }]);
         Alert.alert('Успех', 'Регистрация прошла успешно!');
-        setIsRegistering(false); // Вернуться на экран входа
-        setUsername(''); // Очистить поля
+
+        // Вызов функции onLogin для переключения на главный экран
+        onLogin();
+
+        // Сброс полей
+        setUsername('');
         setPassword('');
     };
 

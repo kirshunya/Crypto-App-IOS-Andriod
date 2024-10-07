@@ -15,7 +15,7 @@ const MainScreen = () => {
                     params: {
                         vs_currency: 'usd',
                         order: 'market_cap_desc',
-                        per_page: 10,
+                        per_page: 50,
                         page: 1,
                         sparkline: true,
                     },
@@ -122,6 +122,10 @@ const MainScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#1E1E1E',
+    },
     container: {
         flex: 1,
         paddingTop: 50,
