@@ -13,11 +13,11 @@ import {
 import axios from 'axios';
 
 const CryptoConverter = () => {
-    const [amounts, setAmounts] = useState(['1']); // Начальное значение для первой криптовалюты
+    const [amounts, setAmounts] = useState(['1']);
     const [currencies, setCurrencies] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const [conversionRates, setConversionRates] = useState({}); // Для хранения курсов
+    const [conversionRates, setConversionRates] = useState({});
 
     useEffect(() => {
         const fetchCurrencies = async () => {
@@ -39,35 +39,40 @@ const CryptoConverter = () => {
                 }));
                 setCurrencies(formattedCurrencies);
                 setConversionRates(Object.fromEntries(formattedCurrencies.map(coin => [coin.value, coin.current_price])));
-                setAmounts(new Array(formattedCurrencies.length).fill('1')); // Инициализация с "1"
-                convertCurrencies(new Array(formattedCurrencies.length).fill('1'), formattedCurrencies); // Конвертация при загрузке
             } catch (error) {
                 console.error('Error fetching currencies:', error);
             }
         };
-
         fetchCurrencies();
     }, []);
 
     const handleAmountChange = (text, index) => {
         const newAmounts = [...amounts];
         newAmounts[index] = text;
-        setAmounts(newAmounts); // Устанавливаем новое значение для текущего поля
 
-        // Конвертация только при вводе в одно из полей
-        convertCurrencies(newAmounts, currencies);
+        // Обновляем состояния
+        setAmounts(newAmounts);
+        convertCurrencies(newAmounts);
     };
 
-    const convertCurrencies = (amounts, currencies) => {
-        const results = amounts.map((amount, index) => {
-            const coin = currencies[index % currencies.length];
-            if (!coin) return '0.0000'; // Если валюты нет, возвращаем 0
-
-            // Проверка на число
-            const dollarValue = parseFloat(amount) * (conversionRates[currencies[0].value] || 1); // Получаем значение в долларах
-            return (dollarValue / (conversionRates[coin.value] || 1)).toFixed(4); // Конвертация на основе курса
+    const convertCurrencies = (amounts) => {
+        const dollarValues = amounts.map((amount, index) => {
+            const value = parseFloat(amount);
+            // Если значение не числовое или пустое, возвращаем 0
+            if (isNaN(value) || value < 0) {
+                return 0;
+            }
+            return value * (conversionRates[currencies[index].value] || 1);
         });
-        setAmounts(results); // Обновляем значения в строках ввода
+
+        const results = dollarValues.map((dollarValue) => {
+            return currencies.map((coin) => {
+                return (dollarValue / (conversionRates[coin.value] || 1)).toFixed(4);
+            });
+        });
+
+        // Обновляем состояния с результатами конвертации
+        setAmounts(results[0] || []);
     };
 
     const selectCurrency = (value) => {
@@ -76,12 +81,12 @@ const CryptoConverter = () => {
             newCurrencies[selectedIndex].value = value;
         }
         setModalVisible(false);
-        convertCurrencies(amounts, newCurrencies);
+        convertCurrencies(amounts);
     };
 
     const addCurrencyInput = () => {
         if (currencies.length > amounts.length) {
-            setAmounts([...amounts, '']); // Добавляем пустую строку для нового ввода
+            setAmounts([...amounts, '']);
         }
     };
 
@@ -89,11 +94,11 @@ const CryptoConverter = () => {
         <ScrollView style={styles.container}>
             <Text style={styles.title}>Криптовалютный конвертер</Text>
 
-            {amounts.map((amount, index) => (
+            {currencies.map((currency, index) => (
                 <View key={index} style={styles.converterRow}>
                     <TextInput
                         style={styles.input}
-                        value={amount}
+                        value={amounts[index]}
                         keyboardType="numeric"
                         onChangeText={(text) => handleAmountChange(text, index)}
                     />
@@ -104,8 +109,8 @@ const CryptoConverter = () => {
                         }}
                         style={styles.currencyButton}
                     >
-                        <Image source={currencies[index]?.image} style={styles.icon} />
-                        <Text style={styles.currencyText}>{currencies[index]?.value || 'Выберите валюту'}</Text>
+                        <Image source={currency.image} style={styles.icon} />
+                        <Text style={styles.currencyText}>{currency.value}</Text>
                     </TouchableOpacity>
                 </View>
             ))}

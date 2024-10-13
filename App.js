@@ -20,7 +20,7 @@ const MainApp = () => {
             screenOptions={{
                 tabBarStyle: {
                     backgroundColor: '#1E1E1E', // Темный цвет фона
-                    height: 80, // Уменьшенная высота
+                    height: 75, // Уменьшенная высота
                 },
                 tabBarActiveTintColor: '#00FF7F', // Цвет активной иконки
                 tabBarInactiveTintColor: '#B0B0B0', // Цвет неактивной иконки
