@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthScreen = ({ onLogin }) => {
     const [username, setUsername] = useState('');
@@ -7,27 +8,41 @@ const AuthScreen = ({ onLogin }) => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [users, setUsers] = useState([]);
 
-    const handleLogin = () => {
+    useEffect(() => {
+        const loadUsers = async () => {
+            const storedUsers = await AsyncStorage.getItem('users');
+            if (storedUsers) {
+                setUsers(JSON.parse(storedUsers));
+            }
+        };
+        loadUsers();
+    }, []);
+
+    const handleLogin = async () => {
         const user = users.find((u) => u.username === username && u.password === password);
         if (user) {
-            onLogin();
+            onLogin(user); // Передаем пользователя в onLogin, если нужно
         } else {
             Alert.alert('Ошибка', 'Неверные данные');
         }
     };
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
         const existingUser = users.find((u) => u.username === username);
         if (existingUser) {
             Alert.alert('Ошибка', 'Пользователь с таким именем уже существует');
             return;
         }
-        // Добавление нового пользователя
-        setUsers([...users, { username, password }]);
+        const newUser = { username, password };
+        const updatedUsers = [...users, newUser];
+
+        // Сохраняем пользователей в AsyncStorage
+        await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
         Alert.alert('Успех', 'Регистрация прошла успешно!');
 
         // Вызов функции onLogin для переключения на главный экран
-        onLogin();
+        onLogin(newUser); // Передаем нового пользователя в onLogin
 
         // Сброс полей
         setUsername('');

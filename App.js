@@ -4,17 +4,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import AuthScreen from './scr/components/Auth/AuthScreen';
-import ProfileScreen from './scr/components/Profile/ProfileScreen';
+import ProfileScreen from './scr/components/Profile/ProfileScreen'; // Импортируем экран профиля
 import CryptoConverter from './scr/components/CurrencyConverter/CurrencyConverterScreen';
 import MainScreen from './scr/components/MainScreen/MainScreen';
 import NewsScreen from './scr/components/News/NewsScreen';
 import CryptoDetailScreen from './scr/components/CryptoDetailScreen/CryptoDetailScreen';
-import Icon from 'react-native-vector-icons/Ionicons'; // Импортируйте иконки
+import Icon from 'react-native-vector-icons/Ionicons'; // Импортируем иконки
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const MainApp = () => {
+const MainApp = ({ user, onLogout }) => {
     return (
         <Tab.Navigator
             screenOptions={{
@@ -50,6 +50,15 @@ const MainApp = () => {
                     tabBarIcon: ({ color }) => <Icon name="newspaper-outline" color={color} size={24} />
                 }}
             />
+            <Tab.Screen
+                name="Профиль"
+                options={{
+                    tabBarIcon: ({ color }) => <Icon name="person-outline" color={color} size={24} />,
+                    headerShown: false,
+                }}
+            >
+                {(props) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
+            </Tab.Screen>
         </Tab.Navigator>
     );
 };
@@ -64,7 +73,7 @@ const MainStack = () => {
 };
 
 const App = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
 
     const handleLogin = (userData) => {
@@ -72,10 +81,19 @@ const App = () => {
         setIsAuthenticated(true);
     };
 
+    const handleLogout = () => {
+        setUser(null);
+        setIsAuthenticated(false);
+    };
+
     return (
         <NavigationContainer>
             <View style={{ flex: 1 }}>
-                {isAuthenticated ? <MainApp user={user} /> : <AuthScreen onLogin={handleLogin} />}
+                {isAuthenticated ? (
+                    <MainApp user={user} onLogout={handleLogout} />
+                ) : (
+                    <AuthScreen onLogin={handleLogin} />
+                )}
             </View>
         </NavigationContainer>
     );
