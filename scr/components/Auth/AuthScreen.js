@@ -1,52 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const AuthScreen = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
-    const [users, setUsers] = useState([]);
-
-    useEffect(() => {
-        const loadUsers = async () => {
-            const storedUsers = await AsyncStorage.getItem('users');
-            if (storedUsers) {
-                setUsers(JSON.parse(storedUsers));
-            }
-        };
-        loadUsers();
-    }, []);
 
     const handleLogin = async () => {
-        const user = users.find((u) => u.username === username && u.password === password);
-        if (user) {
-            onLogin(user); // Передаем пользователя в onLogin, если нужно
-        } else {
+        console.log(username, password);
+        try {
+            const response = await axios.post('http://localhost:8000/login', {
+                username,
+                password,
+            });
+            const { token } = response.data;
+
+            await AsyncStorage.setItem('userToken', token);
+            Alert.alert('Успех', 'Вы успешно вошли в систему');
+            onLogin();
+        } catch (error) {
+            console.log(error)
             Alert.alert('Ошибка', 'Неверные данные');
         }
     };
 
     const handleRegister = async () => {
-        const existingUser = users.find((u) => u.username === username);
-        if (existingUser) {
-            Alert.alert('Ошибка', 'Пользователь с таким именем уже существует');
-            return;
+        try {
+            console.log(username, password);
+            const response = await axios.post('http://localhost:8000/register', {
+                username,
+                password,
+            });
+
+            Alert.alert('Успех', 'Регистрация прошла успешно!');
+            handleLogin();
+        } catch (error) {
+            Alert.alert('Ошибка', 'Ошибка при регистрации. Возможно, пользователь с таким именем уже существует.');
+            console.log(error);
         }
-        const newUser = { username, password };
-        const updatedUsers = [...users, newUser];
-
-        // Сохраняем пользователей в AsyncStorage
-        await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
-        setUsers(updatedUsers);
-        Alert.alert('Успех', 'Регистрация прошла успешно!');
-
-        // Вызов функции onLogin для переключения на главный экран
-        onLogin(newUser); // Передаем нового пользователя в onLogin
-
-        // Сброс полей
-        setUsername('');
-        setPassword('');
     };
 
     return (

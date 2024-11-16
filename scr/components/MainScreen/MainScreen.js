@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import axios from 'axios';
 import { LineChart } from 'react-native-svg-charts';
 import { useNavigation } from '@react-navigation/native';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+
+const { width } = Dimensions.get('window');
+
+const isTablet = width > 600; // Определяем, является ли устройство планшетом
 
 const MainScreen = () => {
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const itemsPerPage = 10; // Количество элементов на странице
+    const itemsPerPage = 10;
     const navigation = useNavigation();
 
-    // Функция для получения данных с задержкой
     const fetchCryptos = async () => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Задержка в 1 секунду
+            await new Promise(resolve => setTimeout(resolve, 1000));
             const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
                 params: {
                     vs_currency: 'usd',
                     order: 'market_cap_desc',
-                    per_page: 100, // Получаем больше данных для поиска
+                    per_page: 100,
                     page: 1,
                     sparkline: true,
                 },
@@ -37,10 +41,10 @@ const MainScreen = () => {
                 try {
                     await fetchCryptos();
                     setLoading(false);
-                    break; // Успешно выполнено, выходим из цикла
+                    break;
                 } catch (error) {
                     if (error.response?.status === 429 && i < retries - 1) {
-                        const waitTime = Math.pow(2, i) * 1000; // Экспоненциальная задержка
+                        const waitTime = Math.pow(2, i) * 1000;
                         await new Promise(resolve => setTimeout(resolve, waitTime));
                     } else {
                         console.error(error);
@@ -109,12 +113,12 @@ const MainScreen = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.greeting}>Good morning</Text>
-                <Text style={styles.guest}>Guest</Text>
+                <Text style={styles.greeting}>Доброе утро</Text>
+                <Text style={styles.guest}>Гость</Text>
             </View>
             <TextInput
                 style={styles.searchInput}
-                placeholder="SEARCH NECESSARY COIN"
+                placeholder="Поиск необходимой монеты"
                 placeholderTextColor="#B0B0B0"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -132,9 +136,9 @@ const MainScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: 50,
+        paddingTop: hp('5%'),
         backgroundColor: '#121212',
-        paddingHorizontal: 20,
+        paddingHorizontal: wp('5%'),
     },
     loaderContainer: {
         flex: 1,
@@ -146,24 +150,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: hp('3%'),
     },
     greeting: {
-        fontSize: 28,
+        fontSize: isTablet ? wp('8%') : wp('7%'), // Увеличиваем размер шрифта для планшетов
         color: '#FFD700',
         fontWeight: 'bold',
     },
     guest: {
-        fontSize: 20,
+        fontSize: isTablet ? wp('6%') : wp('5%'), // Увеличиваем размер шрифта для планшетов
         color: '#B0B0B0',
     },
     searchInput: {
-        height: 50,
+        height: hp('6%'),
         backgroundColor: '#2C2C2C',
         borderRadius: 10,
-        paddingHorizontal: 15,
+        paddingHorizontal: wp('3%'),
         color: '#FFFFFF',
-        marginBottom: 20,
+        marginBottom: hp('2%'),
         shadowColor: '#000',
         shadowOpacity: 0.2,
         shadowRadius: 5,
@@ -171,13 +175,13 @@ const styles = StyleSheet.create({
     },
     list: {
         width: '100%',
-        paddingVertical: 10,
+        paddingVertical: hp('2%'),
     },
     item: {
         backgroundColor: '#2C2C2C',
-        padding: 15,
+        padding: hp('2%'),
         borderRadius: 10,
-        marginVertical: 8,
+        marginVertical: hp('1%'),
         flexDirection: 'column',
         alignItems: 'flex-start',
         shadowColor: '#000',
@@ -188,17 +192,17 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: hp('1%'),
     },
     image: {
-        width: 30,
-        height: 30,
-        marginRight: 10,
+        width: isTablet ? wp('10%') : wp('8%'), // Увеличиваем размер изображения для планшетов
+        height: isTablet ? wp('10%') : wp('8%'),
+        marginRight: wp('3%'),
     },
     chartContainer: {
-        height: 80,
+        height: hp('12%'), // Увеличиваем высоту графика для планшетов
         width: '100%',
-        marginBottom: 8,
+        marginBottom: hp('1%'),
         overflow: 'hidden',
         borderRadius: 10,
     },
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
     },
     itemText: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: isTablet ? wp('5%') : wp('4.5%'), // Увеличиваем размер шрифта для планшетов
         fontWeight: '600',
     },
     priceContainer: {
@@ -217,11 +221,11 @@ const styles = StyleSheet.create({
     },
     priceText: {
         color: '#00FF7F',
-        fontSize: 18,
+        fontSize: isTablet ? wp('6%') : wp('5%'), // Увеличиваем размер шрифта для планшетов
         fontWeight: 'bold',
     },
     changeText: {
-        fontSize: 16,
+        fontSize: isTablet ? wp('5%') : wp('4%'), // Увеличиваем размер шрифта для планшетов
         fontWeight: '500',
     },
     changePositive: {

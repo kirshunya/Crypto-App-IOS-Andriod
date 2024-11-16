@@ -1,21 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet, TouchableOpacisty, Alert, Image, Linking } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 const ProfileScreen = ({ user, onLogout }) => {
     const [avatarSource, setAvatarSource] = useState(null);
 
-    const handleUploadAvatar = () => {
-        launchImageLibrary({ mediaType: 'photo' }, (response) => {
-            if (response.didCancel) {
-                console.log('User cancelled image picker');
-            } else if (response.error) {
-                console.log('ImagePicker Error: ', response.error);
-            } else {
-                setAvatarSource(response.assets[0].uri);
-            }
+    const handleUploadAvatar = async () => {
+        // Запрашиваем разрешение на доступ к медиатеке
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            alert('Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
+        // Открываем медиатеку
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
         });
+
+        // Логируем весь ответ
+        console.log('ImagePicker result:', result);
+
+        if (result.cancelled) {
+            console.log('User cancelled image picker');
+        } else if (result.assets && result.assets.length > 0) {
+            console.log('Selected image URI:', result.assets[0].uri); // Проверяем структуру
+            setAvatarSource(result.assets[0].uri);
+        } else {
+            console.log('No image selected or unexpected result structure');
+        }
     };
 
     const handleLogout = () => {
@@ -23,11 +39,15 @@ const ProfileScreen = ({ user, onLogout }) => {
         Alert.alert('Вы вышли из системы');
     };
 
+    const openBinance = () => {
+        Linking.openURL('https://www.binance.com');
+    };
+
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={handleUploadAvatar}>
                 <Image
-                    source={avatarSource ? { uri: avatarSource } : require('../../../assets/img.png')} // Укажите путь к изображению по умолчанию
+                    source={avatarSource ? { uri: avatarSource } : require('../../../assets/img.png')} // Убедитесь, что путь к изображению правильный
                     style={styles.avatar}
                 />
             </TouchableOpacity>
@@ -35,14 +55,23 @@ const ProfileScreen = ({ user, onLogout }) => {
             <Text style={styles.userInfo}>Имя пользователя: {user.username}</Text>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Биржа</Text>
-                <View style={styles.exchangeInfo}>
-                    <Icon name="logo-binance" size={30} color="#F3BA2F" />
-                    <Text style={styles.exchangeText}> Binance</Text>
-                </View>
+                <TouchableOpacity style={styles.exchangeInfo} onPress={openBinance}>
+                    <Image
+                        style={styles.icon}
+                        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6001/6001399.png' }} // Замените на ваш URL иконки
+                    />
+                    <Text style={styles.exchangeText}>Binance</Text>
+                </TouchableOpacity>
             </View>
-            <View style={styles.currencySection}>
+            <View style={[styles.currencySection, styles.flexColumn]}>
                 <Text style={styles.currencyTitle}>Валюта:</Text>
-                <Text style={styles.currencyValue}>Доллар (USD)</Text>
+                <View style={[styles.flexRow, styles.currencyValue]}>
+                    <Image
+                        style={styles.icon}
+                        source={{ uri: 'https://cdn.icon-icons.com/icons2/3006/PNG/512/usdt_cryptocurrencies_icon_188337.png' }} // Замените на ваш URL иконки
+                    />
+                    <Text style={styles.exchangeText}>Доллар (USDT)</Text>
+                </View>
             </View>
             <TouchableOpacity style={styles.button} onPress={handleLogout}>
                 <Text style={styles.buttonText}>Выйти</Text>
@@ -99,7 +128,7 @@ const styles = StyleSheet.create({
     exchangeText: {
         fontSize: 18,
         color: '#FFFFFF',
-        marginLeft: 10,
+        marginLeft: 5,
     },
     currencySection: {
         marginTop: 20,
@@ -130,6 +159,18 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    flexColumn: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+    },
+    flexRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    icon: {
+        width: 30,
+        height: 30,
     },
 });
 
