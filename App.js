@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Dimensions } from 'react-native';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -11,11 +11,15 @@ import NewsScreen from './scr/components/News/NewsScreen';
 import CryptoDetailScreen from './scr/components/CryptoDetailScreen/CryptoDetailScreen';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ArbitrageScreen from "./scr/components/Arbitrage/ArbitrageScreen";
+import { useTranslation } from 'react-i18next'; // Импортируйте хук для локализации
+import './i18n'; // Импортируйте ваш файл инициализации i18next
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const MainApp = ({ user, onLogout }) => {
+    const { t } = useTranslation(); // Используйте хук для получения функции перевода
+
     return (
         <Tab.Navigator
             screenOptions={{
@@ -28,7 +32,7 @@ const MainApp = ({ user, onLogout }) => {
             }}
         >
             <Tab.Screen
-                name="Главная страница"
+                name={t('mainPage')} // Используйте функцию перевода
                 component={MainStack}
                 options={{
                     headerShown: false,
@@ -36,7 +40,7 @@ const MainApp = ({ user, onLogout }) => {
                 }}
             />
             <Tab.Screen
-                name="Арбитраж" // Добавляем новую вкладку
+                name={t('arbitrage')} // Используйте функцию перевода
                 component={ArbitrageScreen}
                 options={{
                     headerShown: false,
@@ -44,7 +48,7 @@ const MainApp = ({ user, onLogout }) => {
                 }}
             />
             <Tab.Screen
-                name="Конвертер"
+                name={t('converter')} // Используйте функцию перевода
                 component={CryptoConverter}
                 options={{
                     headerShown: false,
@@ -52,7 +56,7 @@ const MainApp = ({ user, onLogout }) => {
                 }}
             />
             <Tab.Screen
-                name="Новости"
+                name={t('news')} // Используйте функцию перевода
                 component={NewsScreen}
                 options={{
                     headerShown: false,
@@ -60,7 +64,7 @@ const MainApp = ({ user, onLogout }) => {
                 }}
             />
             <Tab.Screen
-                name="Профиль"
+                name={t('profile')} // Используйте функцию перевода
                 options={{
                     tabBarIcon: ({ color }) => <Icon name="person-outline" color={color} size={24} />,
                     headerShown: false,
@@ -82,7 +86,7 @@ const MainStack = () => {
 };
 
 const App = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
 
     const handleLogin = (userData) => {

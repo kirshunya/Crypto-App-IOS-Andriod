@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacisty, Alert, Image, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Alert, Image, Linking, TouchableOpacity, Dimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const ProfileScreen = ({ user, onLogout }) => {
+    const { t, i18n } = useTranslation(); // Инициализируем i18next
     const [avatarSource, setAvatarSource] = useState(null);
+    const [isTablet, setIsTablet] = useState(false);
+    const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+
+    useEffect(() => {
+        const updateLayout = () => {
+            const { width } = Dimensions.get('window');
+            setScreenWidth(width);
+            setIsTablet(width >= 768); // Определяем, является ли устройство планшетом
+        };
+
+        const subscription = Dimensions.addEventListener('change', updateLayout);
+        return () => {
+            subscription?.remove(); // Отписываемся при размонтировании компонента
+        };
+    }, []);
 
     const handleUploadAvatar = async () => {
-        // Запрашиваем разрешение на доступ к медиатеке
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            alert('Sorry, we need camera roll permissions to make this work!');
+            alert(t('permissionsDenied')); // Используйте локализованный текст
             return;
         }
 
-        // Открываем медиатеку
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
@@ -21,145 +36,154 @@ const ProfileScreen = ({ user, onLogout }) => {
             quality: 1,
         });
 
-        // Логируем весь ответ
-        console.log('ImagePicker result:', result);
-
         if (result.cancelled) {
             console.log('User cancelled image picker');
         } else if (result.assets && result.assets.length > 0) {
-            console.log('Selected image URI:', result.assets[0].uri); // Проверяем структуру
             setAvatarSource(result.assets[0].uri);
-        } else {
-            console.log('No image selected or unexpected result structure');
         }
     };
 
     const handleLogout = () => {
         onLogout();
-        Alert.alert('Вы вышли из системы');
+        Alert.alert(t('loggedOut')); // Используйте локализованный текст
     };
 
     const openBinance = () => {
         Linking.openURL('https://www.binance.com');
     };
 
+    const changeLanguage = (lng) => {
+        i18n.changeLanguage(lng);
+    };
+
     return (
-        <View style={styles.container}>
+        <View style={styles.container(isTablet)}>
             <TouchableOpacity onPress={handleUploadAvatar}>
                 <Image
-                    source={avatarSource ? { uri: avatarSource } : require('../../../assets/img.png')} // Убедитесь, что путь к изображению правильный
-                    style={styles.avatar}
+                    source={avatarSource ? { uri: avatarSource } : require('../../../assets/img.png')}
+                    style={styles.avatar(isTablet)}
                 />
             </TouchableOpacity>
-            <Text style={styles.title}>Личный кабинет</Text>
-            <Text style={styles.userInfo}>Имя пользователя: {user.username}</Text>
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Биржа</Text>
+            <Text style={styles.title(isTablet)}>{t('profileTitle')}</Text>
+            <Text style={styles.userInfo(isTablet)}>{t('username')}: {user.username}</Text>
+            <View style={styles.section(isTablet)}>
+                <Text style={styles.sectionTitle(isTablet)}>{t('exchange')}</Text>
                 <TouchableOpacity style={styles.exchangeInfo} onPress={openBinance}>
                     <Image
-                        style={styles.icon}
-                        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6001/6001399.png' }} // Замените на ваш URL иконки
+                        style={styles.icon(isTablet)}
+                        source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6001/6001399.png' }}
                     />
-                    <Text style={styles.exchangeText}>Binance</Text>
+                    <Text style={styles.exchangeText(isTablet)}>Binance</Text>
                 </TouchableOpacity>
             </View>
-            <View style={[styles.currencySection, styles.flexColumn]}>
-                <Text style={styles.currencyTitle}>Валюта:</Text>
+            <View style={[styles.currencySection(isTablet), styles.flexColumn]}>
+                <Text style={styles.currencyTitle(isTablet)}>{t('currencyTitle')}:</Text>
                 <View style={[styles.flexRow, styles.currencyValue]}>
                     <Image
-                        style={styles.icon}
-                        source={{ uri: 'https://cdn.icon-icons.com/icons2/3006/PNG/512/usdt_cryptocurrencies_icon_188337.png' }} // Замените на ваш URL иконки
+                        style={styles.icon(isTablet)}
+                        source={{ uri: 'https://cdn.icon-icons.com/icons2/3006/PNG/512/usdt_cryptocurrencies_icon_188337.png' }}
                     />
-                    <Text style={styles.exchangeText}>Доллар (USDT)</Text>
+                    <Text style={styles.exchangeText(isTablet)}>Доллар (USDT)</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleLogout}>
-                <Text style={styles.buttonText}>Выйти</Text>
+            <TouchableOpacity style={styles.button(isTablet)} onPress={handleLogout}>
+                <Text style={styles.buttonText(isTablet)}>{t('logout')}</Text>
             </TouchableOpacity>
+            <View style={styles.languageButtons}>
+                <TouchableOpacity onPress={() => changeLanguage('en')}>
+                    <Text style={styles.languageButton}>English</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => changeLanguage('ru')}>
+                    <Text style={styles.languageButton}>Русский</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => changeLanguage('es')}>
+                    <Text style={styles.languageButton}>Español</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    container: (isTablet) => ({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#1E1E1E',
-        padding: 20,
-    },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        padding: isTablet ? 40 : 20,
+    }),
+    avatar: (isTablet) => ({
+        width: isTablet ? 150 : 100,
+        height: isTablet ? 150 : 100,
+        borderRadius: 75,
         borderWidth: 2,
         borderColor: '#00FF7F',
         marginBottom: 20,
-    },
-    title: {
-        fontSize: 24,
+    }),
+    title: (isTablet) => ({
+        fontSize: isTablet ? 28 : 24,
         fontWeight: '600',
         marginBottom: 20,
         color: '#FFFFFF',
-    },
-    userInfo: {
-        fontSize: 18,
+    }),
+    userInfo: (isTablet) => ({
+        fontSize: isTablet ? 20 : 18,
         color: '#B0B0B0',
         marginBottom: 10,
-    },
-    section: {
+    }),
+    section: (isTablet) => ({
         marginTop: 20,
         padding: 15,
         backgroundColor: '#2C2C2C',
         borderRadius: 10,
         width: '100%',
         alignItems: 'flex-start',
-    },
-    sectionTitle: {
-        fontSize: 20,
+    }),
+    sectionTitle: (isTablet) => ({
+        fontSize: isTablet ? 24 : 20,
         color: '#00FF7F',
         fontWeight: 'bold',
         marginBottom: 10,
-    },
+    }),
     exchangeInfo: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    exchangeText: {
-        fontSize: 18,
+    exchangeText: (isTablet) => ({
+        fontSize: isTablet ? 20 : 18,
         color: '#FFFFFF',
         marginLeft: 5,
-    },
-    currencySection: {
+    }),
+    currencySection: (isTablet) => ({
         marginTop: 20,
         padding: 15,
         backgroundColor: '#2C2C2C',
         borderRadius: 10,
         width: '100%',
         alignItems: 'flex-start',
-    },
-    currencyTitle: {
-        fontSize: 20,
+    }),
+    currencyTitle: (isTablet) => ({
+        fontSize: isTablet ? 24 : 20,
         color: '#00FF7F',
         fontWeight: 'bold',
-    },
+    }),
     currencyValue: {
         fontSize: 18,
         color: '#FFFFFF',
     },
-    button: {
+    button: (isTablet) => ({
         backgroundColor: '#007BFF',
-        padding: 15,
+        padding: isTablet ? 20 : 15,
         alignItems: 'center',
         borderRadius: 10,
         marginTop: 20,
         width: '100%',
-    },
-    buttonText: {
+    }),
+    buttonText: (isTablet) => ({
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: isTablet ? 20 : 18,
         fontWeight: 'bold',
-    },
+    }),
     flexColumn: {
         flexDirection: 'column',
         alignItems: 'flex-start',
@@ -168,9 +192,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    icon: {
-        width: 30,
-        height: 30,
+    icon: (isTablet) => ({
+        width: isTablet ? 40 : 30,
+        height: isTablet ? 40 : 30,
+    }),
+    languageButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 20,
+        width: '100%',
+    },
+    languageButton: {
+        color: '#00FF7F',
+        fontSize: 18,
+        marginHorizontal: 10,
     },
 });
 

@@ -5,12 +5,13 @@ import { LineChart } from 'react-native-svg-charts';
 import { useNavigation } from '@react-navigation/native';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const { width } = Dimensions.get('window');
-
 const isTablet = width > 600; // Определяем, является ли устройство планшетом
 
 const MainScreen = () => {
+    const { t } = useTranslation(); // Инициализируем i18next
     const [cryptocurrencies, setCryptocurrencies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -113,12 +114,12 @@ const MainScreen = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.greeting}>Доброе утро</Text>
-                <Text style={styles.guest}>Гость</Text>
+                <Text style={styles.greeting}>{t('goodMorning')}</Text> {/* Локализованный текст */}
+                <Text style={styles.guest}>{t('guest')}</Text> {/* Локализованный текст */}
             </View>
             <TextInput
                 style={styles.searchInput}
-                placeholder="Поиск необходимой монеты"
+                placeholder={t('searchPlaceholder')} // Локализованный текст
                 placeholderTextColor="#B0B0B0"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -153,12 +154,12 @@ const styles = StyleSheet.create({
         marginBottom: hp('3%'),
     },
     greeting: {
-        fontSize: isTablet ? wp('8%') : wp('7%'), // Увеличиваем размер шрифта для планшетов
+        fontSize: isTablet ? wp('8%') : wp('7%'),
         color: '#FFD700',
         fontWeight: 'bold',
     },
     guest: {
-        fontSize: isTablet ? wp('6%') : wp('5%'), // Увеличиваем размер шрифта для планшетов
+        fontSize: isTablet ? wp('6%') : wp('5%'),
         color: '#B0B0B0',
     },
     searchInput: {
@@ -195,12 +196,12 @@ const styles = StyleSheet.create({
         marginBottom: hp('1%'),
     },
     image: {
-        width: isTablet ? wp('10%') : wp('8%'), // Увеличиваем размер изображения для планшетов
+        width: isTablet ? wp('10%') : wp('8%'),
         height: isTablet ? wp('10%') : wp('8%'),
         marginRight: wp('3%'),
     },
     chartContainer: {
-        height: hp('12%'), // Увеличиваем высоту графика для планшетов
+        height: hp('12%'),
         width: '100%',
         marginBottom: hp('1%'),
         overflow: 'hidden',
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
     },
     itemText: {
         color: '#FFFFFF',
-        fontSize: isTablet ? wp('5%') : wp('4.5%'), // Увеличиваем размер шрифта для планшетов
+        fontSize: isTablet ? wp('5%') : wp('4.5%'),
         fontWeight: '600',
     },
     priceContainer: {
@@ -221,11 +222,11 @@ const styles = StyleSheet.create({
     },
     priceText: {
         color: '#00FF7F',
-        fontSize: isTablet ? wp('6%') : wp('5%'), // Увеличиваем размер шрифта для планшетов
+        fontSize: isTablet ? wp('6%') : wp('5%'),
         fontWeight: 'bold',
     },
     changeText: {
-        fontSize: isTablet ? wp('5%') : wp('4%'), // Увеличиваем размер шрифта для планшетов
+        fontSize: isTablet ? wp('5%') : wp('4%'),
         fontWeight: '500',
     },
     changePositive: {

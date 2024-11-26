@@ -1,74 +1,94 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const AuthScreen = ({ onLogin }) => {
+    const { t, i18n } = useTranslation(); // Инициализируем i18next
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
+    const [users, setUsers] = useState([]);
+
+    useEffect(() => {
+        const loadUsers = async () => {
+            const storedUsers = await AsyncStorage.getItem('users');
+            if (storedUsers) {
+                setUsers(JSON.parse(storedUsers));
+            }
+        };
+        loadUsers();
+    }, []);
 
     const handleLogin = async () => {
-        console.log(username, password);
-        try {
-            const response = await axios.post('http://localhost:8000/login', {
-                username,
-                password,
-            });
-            const { token } = response.data;
-
-            await AsyncStorage.setItem('userToken', token);
-            Alert.alert('Успех', 'Вы успешно вошли в систему');
-            onLogin();
-        } catch (error) {
-            console.log(error)
-            Alert.alert('Ошибка', 'Неверные данные');
+        const user = users.find((u) => u.username === username && u.password === password);
+        if (user) {
+            onLogin(user); // Передаем пользователя в onLogin
+        } else {
+            Alert.alert(t('error'), t('invalidCredentials')); // Используем локализованный текст
         }
     };
 
     const handleRegister = async () => {
-        try {
-            console.log(username, password);
-            const response = await axios.post('http://localhost:8000/register', {
-                username,
-                password,
-            });
-
-            Alert.alert('Успех', 'Регистрация прошла успешно!');
-            handleLogin();
-        } catch (error) {
-            Alert.alert('Ошибка', 'Ошибка при регистрации. Возможно, пользователь с таким именем уже существует.');
-            console.log(error);
+        const existingUser = users.find((u) => u.username === username);
+        if (existingUser) {
+            Alert.alert(t('error'), t('userExists')); // Используем локализованный текст
+            return;
         }
+        const newUser = { username, password };
+        const updatedUsers = [...users, newUser];
+
+        await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
+        Alert.alert(t('success'), t('registrationSuccess')); // Используем локализованный текст
+
+        onLogin(newUser); // Передаем нового пользователя в onLogin
+        setUsername('');
+        setPassword('');
+    };
+
+    const changeLanguage = (lng) => {
+        i18n.changeLanguage(lng); // Смена языка
     };
 
     return (
         <View style={styles.background}>
-            <Text style={styles.title}>{isRegistering ? 'Регистрация' : 'Добро пожаловать'}</Text>
+            <Text style={styles.title}>{isRegistering ? t('register') : t('welcome')}</Text>
             <View style={styles.container}>
                 <TextInput
                     style={styles.input}
-                    placeholder="Имя пользователя"
+                    placeholder={t('usernamePlaceholder')}
                     placeholderTextColor="#B0B0B0"
                     value={username}
                     onChangeText={setUsername}
                 />
                 <TextInput
                     style={styles.input}
-                    placeholder="Пароль"
+                    placeholder={t('passwordPlaceholder')}
                     placeholderTextColor="#B0B0B0"
                     secureTextEntry
                     value={password}
                     onChangeText={setPassword}
                 />
                 <TouchableOpacity style={styles.button} onPress={isRegistering ? handleRegister : handleLogin}>
-                    <Text style={styles.buttonText}>{isRegistering ? 'Зарегистрироваться' : 'Войти'}</Text>
+                    <Text style={styles.buttonText}>{isRegistering ? t('register') : t('login')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setIsRegistering(!isRegistering)}>
                     <Text style={styles.switchText}>
-                        {isRegistering ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+                        {isRegistering ? t('haveAccount') : t('noAccount')}
                     </Text>
                 </TouchableOpacity>
+                <View style={styles.languageButtons}>
+                    <TouchableOpacity onPress={() => changeLanguage('en')}>
+                        <Text style={styles.languageButton}>English</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => changeLanguage('ru')}>
+                        <Text style={styles.languageButton}>Русский</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => changeLanguage('es')}>
+                        <Text style={styles.languageButton}>Español</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
@@ -125,6 +145,16 @@ const styles = StyleSheet.create({
         color: '#B0B0B0',
         textAlign: 'center',
         marginTop: 10,
+    },
+    languageButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 20,
+    },
+    languageButton: {
+        color: '#00FF7F',
+        fontSize: 16,
+        marginHorizontal: 10,
     },
 });
 

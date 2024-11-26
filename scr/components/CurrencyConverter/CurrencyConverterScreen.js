@@ -11,8 +11,10 @@ import {
     FlatList,
 } from 'react-native';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const CryptoConverter = () => {
+    const { t } = useTranslation(); // Инициализируем i18next
     const [amounts, setAmounts] = useState(['1']);
     const [currencies, setCurrencies] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
@@ -92,7 +94,7 @@ const CryptoConverter = () => {
 
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.title}>Криптовалютный конвертер</Text>
+            <Text style={styles.title}>{t('cryptoConverter')}</Text> {/* Локализованный текст */}
 
             {currencies.map((currency, index) => (
                 <View key={index} style={styles.converterRow}>
@@ -116,7 +118,7 @@ const CryptoConverter = () => {
             ))}
 
             <TouchableOpacity style={styles.addButton} onPress={addCurrencyInput}>
-                <Text style={styles.addButtonText}>Добавить валюту</Text>
+                <Text style={styles.addButtonText}>{t('addCurrency')}</Text> {/* Локализованный текст */}
             </TouchableOpacity>
 
             <Modal
@@ -137,7 +139,7 @@ const CryptoConverter = () => {
                         )}
                     />
                     <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                        <Text style={styles.closeButtonText}>Закрыть</Text>
+                        <Text style={styles.closeButtonText}>{t('close')}</Text> {/* Локализованный текст */}
                     </TouchableOpacity>
                 </View>
             </Modal>

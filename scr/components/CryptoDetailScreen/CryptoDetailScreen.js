@@ -5,9 +5,11 @@ import { LineChart, Grid, YAxis, XAxis } from 'react-native-svg-charts';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import * as scale from 'd3-scale';
 import { PanGestureHandler } from 'react-native-gesture-handler';
+import { useTranslation } from 'react-i18next'; // Импортируем useTranslation
 
 const CryptoDetailScreen = ({ route }) => {
     const { coinId } = route.params;
+    const { t } = useTranslation(); // Инициализируем i18next
     const [coinData, setCoinData] = useState(null);
     const [chartData, setChartData] = useState([]);
     const [dates, setDates] = useState([]);
@@ -50,7 +52,7 @@ const CryptoDetailScreen = ({ route }) => {
     }
 
     if (!coinData) {
-        return <Text style={styles.errorText}>Нет данных</Text>;
+        return <Text style={styles.errorText}>{t('noData')}</Text>; // Локализованный текст
     }
 
     const currentPrice = coinData.market_data?.current_price?.usd || 0;
@@ -70,19 +72,19 @@ const CryptoDetailScreen = ({ route }) => {
             </View>
 
             <View style={styles.infoContainer}>
-                <Text style={styles.infoTitle}>Объем:</Text>
+                <Text style={styles.infoTitle}>{t('volume')}:</Text> {/* Локализованный текст */}
                 <Text style={styles.infoValue}>${totalVolume.toLocaleString()}</Text>
             </View>
 
             <View style={styles.infoContainer}>
-                <Text style={styles.infoTitle}>Изменение 24h:</Text>
+                <Text style={styles.infoTitle}>{t('priceChange24h')}:</Text> {/* Локализованный текст */}
                 <Text style={[styles.infoValue, { color: priceChange24h >= 0 ? '#32CD32' : '#FF4500' }]}>
                     {priceChangeValue.toFixed(2)} USD ({priceChange24h.toFixed(2)}%)
                 </Text>
             </View>
 
             <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>График цен за последние 7 дней</Text>
+                <Text style={styles.chartTitle}>{t('priceChart7Days')}</Text> {/* Локализованный текст */}
                 <PanGestureHandler>
                     <View style={{ flexDirection: 'row', height: 220 }}>
                         <YAxis
@@ -128,8 +130,8 @@ const CryptoDetailScreen = ({ route }) => {
             </View>
 
             <View style={styles.additionalInfoContainer}>
-                <Text style={styles.additionalInfoTitle}>Дополнительная информация:</Text>
-                <Text style={styles.additionalInfoText}>{coinData.description?.en || "Нет описания"}</Text>
+                <Text style={styles.additionalInfoTitle}>{t('additionalInfo')}:</Text> {/* Локализованный текст */}
+                <Text style={styles.additionalInfoText}>{coinData.description?.en || t('noDescription')}</Text> {/* Локализованный текст */}
             </View>
         </ScrollView>
     );

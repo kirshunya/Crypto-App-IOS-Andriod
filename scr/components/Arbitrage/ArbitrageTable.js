@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as ScreenOrientation from 'expo-screen-orientation';
-
-const getOrientation = () => {
-    const dim = Dimensions.get('screen');
-    return dim.width >= dim.height ? 'landscape' : 'portrait';
-};
+import { View, ScrollView, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 
 const styles = StyleSheet.create({
     container: {
@@ -25,9 +18,6 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
     },
-    headerColumn: {
-        width: 100,
-    },
     row: {
         flexDirection: 'row',
     },
@@ -39,19 +29,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    cellPortrait: {
-        width: 80,
-    },
-    cellLandscape: {
-        width: 120,
-    },
     cellText: {
         color: '#FFFFFF',
         textAlign: 'center',
         fontSize: 12,
-    },
-    cellTextLandscape: {
-        fontSize: 14,
     },
     headerCell: {
         backgroundColor: '#2A2A2A',
@@ -60,33 +41,19 @@ const styles = StyleSheet.create({
         color: '#00FF7F',
         fontWeight: 'bold',
     },
-    profitBest: {
-        color: '#00FF7F',
-        fontWeight: 'bold',
-    },
-    profitWorst: {
-        color: '#FF4444',
-        fontWeight: 'bold',
-    },
-    sortButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 10,
-        backgroundColor: '#2A2A2A',
-    },
-    sortButtonText: {
-        color: '#FFFFFF',
-        marginRight: 5,
-    },
-    emptyCell: {
-        backgroundColor: '#1E1E1E',
-    }
 });
 
 const EXCHANGES = [
-    'Binance', 'Coinbase', 'Kraken', 'KuCoin', 'Huobi',
-    'Bitfinex', 'Bybit', 'Gate.io', 'OKX', 'Gemini'
+    { name: 'Binance', url: 'https://api.binance.com/api/v3/ticker/price?symbol=' },
+    { name: 'Coinbase', url: 'https://api.coinbase.com/v2/prices/' },
+    { name: 'Kraken', url: 'https://api.kraken.com/0/public/Ticker?pair=' },
+    { name: 'KuCoin', url: 'https://api.kucoin.com/api/v1/prices?' },
+    { name: 'Huobi', url: 'https://api.huobi.pro/market/detail/merged?symbol=' },
+    { name: 'Bitfinex', url: 'https://api-pub.bitfinex.com/v2/tickers?symbols=' },
+    { name: 'Bybit', url: 'https://api.bybit.com/v2/public/tickers?symbol=' },
+    { name: 'Gate.io', url: 'https://api.gate.io/api2/1/tickers' },
+    { name: 'OKX', url: 'https://www.okx.com/api/v5/market/tickers?instType=SPOT' },
+    { name: 'Gemini', url: 'https://api.gemini.com/v1/pubticker/' },
 ];
 
 export default function ArbitrageTable({ route }) {
@@ -94,20 +61,6 @@ export default function ArbitrageTable({ route }) {
     const [prices, setPrices] = useState({});
     const [loading, setLoading] = useState(true);
     const [profitMatrix, setProfitMatrix] = useState([]);
-    const [sortOrder, setSortOrder] = useState('desc');
-    const [bestProfit, setBestProfit] = useState(null);
-    const [worstProfit, setWorstProfit] = useState(null);
-    const [orientation, setOrientation] = useState(getOrientation());
-
-    useEffect(() => {
-        const subscription = Dimensions.addEventListener('change', () => {
-            setOrientation(getOrientation());
-        });
-
-        return () => {
-            subscription?.remove();
-        };
-    }, []);
 
     useEffect(() => {
         fetchPrices();
@@ -115,83 +68,84 @@ export default function ArbitrageTable({ route }) {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        if (Object.keys(prices).length > 0) {
-            calculateProfitMatrix();
-        }
-    }, [prices]);
-
     const fetchPrices = async () => {
-        const mockPrices = {};
-        EXCHANGES.forEach(exchange => {
-            mockPrices[exchange] =
-                parseFloat((Math.random() * 0.1 + 1) * getBasePrice(coin)).toFixed(2);
+        setLoading(true);
+        const fetchedPrices = {};
+
+        const pricePromises = EXCHANGES.map(async (exchange) => {
+            try {
+                let response;
+                const symbol = coin === 'BTC' ? 'BTCUSDT' : coin + 'USDT'; // Adjust symbol based on exchange API requirements
+
+                if (exchange.name === 'Coinbase') {
+                    response = await fetch(`${exchange.url}${coin}-USD/spot`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.data.amount;
+                } else if (exchange.name === 'Kraken') {
+                    response = await fetch(`${exchange.url}${symbol}`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.result[symbol].c[0];
+                } else if (exchange.name === 'Huobi') {
+                    response = await fetch(`${exchange.url}${coin.toLowerCase()}usdt`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.tick.close;
+                } else if (exchange.name === 'Bitfinex') {
+                    response = await fetch(`${exchange.url}t${symbol}`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data[0][1];
+                } else if (exchange.name === 'Bybit') {
+                    response = await fetch(`${exchange.url}${symbol}`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.result[0].last_price;
+                } else if (exchange.name === 'Gate.io') {
+                    response = await fetch(exchange.url);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data[`${coin.toLowerCase()}_usdt`].last;
+                } else if (exchange.name === 'OKX') {
+                    response = await fetch(exchange.url);
+                    const data = await response.json();
+                    const ticker = data.data.find(item => item.instId.includes(coin));
+                    fetchedPrices[exchange.name] = ticker.last;
+                } else if (exchange.name === 'Gemini') {
+                    response = await fetch(`${exchange.url}${coin}USD`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.last;
+                } else {
+                    response = await fetch(`${exchange.url}${symbol}`);
+                    const data = await response.json();
+                    fetchedPrices[exchange.name] = data.price;
+                }
+            } catch (error) {
+                console.error(`Error fetching price from ${exchange.name}:`, error);
+            }
         });
-        setPrices(mockPrices);
+
+        await Promise.all(pricePromises);
+        setPrices(fetchedPrices);
         setLoading(false);
+        calculateProfitMatrix(fetchedPrices);
     };
 
-    const getBasePrice = (coin) => {
-        const basePrices = {
-            'BTC': 35000,
-            'ETH': 2000,
-            'BNB': 300,
-            'XRP': 0.5,
-            'ADA': 1.2,
-            'DOGE': 0.1,
-            'MATIC': 0.8,
-            'SOL': 100,
-            'DOT': 15,
-            'SHIB': 0.00001,
-            'AVAX': 50,
-            'TRX': 0.08,
-            'LINK': 20
-        };
-        return basePrices[coin] || 100;
-    };
-
-    const calculateProfit = (buyPrice, sellPrice) => {
-        return ((sellPrice - buyPrice) / buyPrice * 100).toFixed(2);
-    };
-
-    const calculateProfitMatrix = () => {
+    const calculateProfitMatrix = (prices) => {
         let matrix = [];
-        let maxProfit = -Infinity;
-        let minProfit = Infinity;
-
         EXCHANGES.forEach(sellExchange => {
             const row = [];
             EXCHANGES.forEach(buyExchange => {
                 if (buyExchange === sellExchange) {
                     row.push(null);
                 } else {
-                    const profit = parseFloat(calculateProfit(
-                        parseFloat(prices[buyExchange]),
-                        parseFloat(prices[sellExchange])
-                    ));
+                    const profit = calculateProfit(prices[buyExchange], prices[sellExchange]);
                     row.push(profit);
-
-                    if (profit > maxProfit) maxProfit = profit;
-                    if (profit < minProfit) minProfit = profit;
                 }
             });
             matrix.push(row);
         });
-
         setProfitMatrix(matrix);
-        setBestProfit(maxProfit);
-        setWorstProfit(minProfit);
     };
 
-    const cellStyle = [
-        styles.cell,
-        orientation === 'portrait' ? styles.cellPortrait : styles.cellLandscape
-    ];
-
-    const textStyle = [
-        styles.cellText,
-        orientation === 'landscape' && styles.cellTextLandscape
-    ];
+    const calculateProfit = (buyPrice, sellPrice) => {
+        return ((sellPrice - buyPrice) / buyPrice * 100).toFixed(2);
+    };
 
     if (loading) {
         return (
@@ -206,35 +160,27 @@ export default function ArbitrageTable({ route }) {
             <ScrollView horizontal>
                 <View>
                     <View style={styles.headerRow}>
-                        <View style={[...cellStyle, styles.headerCell, styles.emptyCell]}>
-                            <Text style={[...textStyle, styles.headerCellText]}>Buy → Sell ↓</Text>
+                        <View style={[styles.cell, styles.headerCell]}>
+                            <Text style={styles.headerCellText}>Buy → Sell ↓</Text>
                         </View>
                         {EXCHANGES.map(exchange => (
-                            <View key={exchange} style={[...cellStyle, styles.headerCell]}>
-                                <Text style={[...textStyle, styles.headerCellText]}>
-                                    {exchange}
-                                </Text>
+                            <View key={exchange.name} style={[styles.cell, styles.headerCell]}>
+                                <Text style={styles.headerCellText}>{exchange.name}</Text>
                             </View>
                         ))}
                     </View>
 
                     {EXCHANGES.map((sellExchange, rowIndex) => (
-                        <View key={sellExchange} style={styles.row}>
-                            <View style={[...cellStyle, styles.headerCell]}>
-                                <Text style={[...textStyle, styles.headerCellText]}>
-                                    {sellExchange}
-                                </Text>
+                        <View key={sellExchange.name} style={styles.row}>
+                            <View style={[styles.cell, styles.headerCell]}>
+                                <Text style={styles.headerCellText}>{sellExchange.name}</Text>
                             </View>
                             {EXCHANGES.map((buyExchange, colIndex) => (
-                                <View key={`${sellExchange}-${buyExchange}`} style={cellStyle}>
+                                <View key={`${sellExchange.name}-${buyExchange.name}`} style={styles.cell}>
                                     {profitMatrix[rowIndex]?.[colIndex] === null ? (
-                                        <Text style={textStyle}>-</Text>
+                                        <Text style={styles.cellText}>-</Text>
                                     ) : (
-                                        <Text style={[
-                                            textStyle,
-                                            profitMatrix[rowIndex]?.[colIndex] === bestProfit && styles.profitBest,
-                                            profitMatrix[rowIndex]?.[colIndex] === worstProfit && styles.profitWorst,
-                                        ]}>
+                                        <Text style={styles.cellText}>
                                             {profitMatrix[rowIndex]?.[colIndex]}%
                                         </Text>
                                     )}
